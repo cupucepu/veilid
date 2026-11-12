@@ -1,23 +1,126 @@
 {
-  "amountNeeded": "One standard faucet drip (5000 tNIGHT, received 2026-11-12). DUST is NOT automatic: the NIGHT UTxO must be registered for DUST generation first (see cli/src/wallet.ts registerDust); registration tx 00b640f1261cb68c4b60b0556ac7f090717ee3b6061603d26fc8519f224fa6952a submitted 2026-11-12 ~02:05 UTC, dust now accruing (~58 DUST at 02:08 UTC).",
-  "blocker": {
-    "endpoint": "POST https://faucet.preview.midnight.network/api/drips",
-    "error": "400 {\"error\":\"Missing X-Captcha-Token header\"} (verified 2026-11-12 01:39 UTC by direct POST without a token; first attempt to /drips returned 404 \u2014 the API base is /api, confirmed from the faucet SPA bundle)",
-    "faucetUrl": "https://faucet.preview.midnight.network",
-    "userStep": "Open https://faucet.preview.midnight.network in a browser, solve the Cloudflare Turnstile captcha, and paste the unshielded address below. Then re-run: npm run veilid -- demo"
-  },
-  "contractAddress": null,
-  "deployedAt": null,
   "network": "preview",
-  "notes": [
-    "Wallet seed lives at ~/.veilid/preview-seed (chmod 600, outside the repo) and is NEVER recorded here. Only public addresses are recorded.",
-    "Proof server 9.0.0 is running locally at http://127.0.0.1:6300 (/health ok).",
-    "CLI: veilid/cli (Midnight.js 5.0.0, ledger 9). Commands: wallet / faucet / fund / deploy / demo / state <address>.",
-    "Resume after funding: npm run veilid -- fund (verify balance + dust), then npm run veilid -- demo (full 4-role e2e with real ZK proofs). This file is then overwritten with the deployment record (contract address, per-step tx hashes + blocks, final on-chain state)."
+  "contractAddress": "7b013d8c6f4c3c31cac1ce63ec50666fc06c3f2320cb81dd0a203d9de95b86fc",
+  "passId": "cf67557db3e40eb0b482154ca1559ec00cc0590bf9953837c9e58cb4975315bf",
+  "passName": "VeilID Demo Pass",
+  "deployedAt": "2026-11-12T02:23:16.614Z",
+  "completedAt": "2026-11-12T02:27:19.143Z",
+  "deploy": {
+    "txHash": "7d3d693689934fdf40b3faea5e4e2948329a4bbf6ec4039dafe08b75f22c460e",
+    "txId": "0060b6821cb02443466758de82baf39e05e07c743dd958582a8125f8f9af77e2d8",
+    "blockHeight": 72486,
+    "blockHash": "814a72c0f8dfd0db7563e38bc7fd09de4fce0f2330e776b056936b00e6d15f8e"
+  },
+  "steps": [
+    {
+      "step": "register Alice",
+      "actor": "issuer",
+      "circuit": "registerCommitment",
+      "txHash": "b6ac7e4005b44d1c2cf9a1a1d2cb29c4d4a322b14559ecf2897198902d102fad",
+      "txId": "001cb23c177a6e59be508368f719833a53830a361945242436657556b2f60eae48",
+      "blockHeight": 72491,
+      "blockHash": "343b085427f3a0fdd0b367474c426e6f999f855ab93dac940e92231d9fc8f8e1"
+    },
+    {
+      "step": "register Carol (self)",
+      "actor": "carol",
+      "circuit": "register",
+      "txHash": "2a76ab90631e12bf07d11d66134e4295caee8251d2e28ce86723aa9f00eda8e1",
+      "txId": "00f7f611badc640cb6406674f9044ad840376fbd8586a5c21746227b460cff4f8f",
+      "blockHeight": 72496,
+      "blockHash": "882312c5339051fb41cb485e1764a497c184d3773d3b48a31945e0518e151813"
+    },
+    {
+      "step": "register Dave",
+      "actor": "issuer",
+      "circuit": "registerCommitment",
+      "txHash": "35b44412ec978526bd73d84a56f7048817f5b58c5548df0f3b25ebd15b029302",
+      "txId": "00cca18b9b397d07c8b00e2468f47ed5db4c9422ca42ea384f4df7eeb3856d2280",
+      "blockHeight": 72501,
+      "blockHash": "9cd1dcee90f4275536c4f0156cbd40beca669b3af5a955cf4db10378cc4555dc"
+    },
+    {
+      "step": "open claiming",
+      "actor": "issuer",
+      "circuit": "openClaiming",
+      "txHash": "1a69636eb209245f19b71b93c2df7fc27964497f01b76bd9065585834aaa94a5",
+      "txId": "00219fda9a4c93022bdd15fe08e41c9b5a84682b9982e1f8757a4c7562a8dd39b7",
+      "blockHeight": 72506,
+      "blockHash": "6273bb40682f797a947935342a40ce6f0d49bd3c1959925f16001ab89fe78ddf"
+    },
+    {
+      "step": "Alice prove eligible",
+      "actor": "alice",
+      "circuit": "proveEligible",
+      "txHash": "f5068190844564e6baa04f7696a38283d2b163f148a32cf9450126591456be06",
+      "txId": "00c58ddc786de0b303ffaac30ed6caee76cb953547f360cbc7b66ebe45fe6f9632",
+      "blockHeight": 72511,
+      "blockHash": "94eef5b88589aec91a83765120316a5d7de205d099d31c7af78b7b7c8883d559"
+    },
+    {
+      "step": "Alice claim",
+      "actor": "alice",
+      "circuit": "claim",
+      "txHash": "6914287d569e700e15f6af36af327693fe8362f66d772e90035ff195272019d5",
+      "txId": "008461a8fddc4024be49a1eb7a577c4b7e8d0c7ee15155d6c727e746030a64f737",
+      "blockHeight": 72517,
+      "blockHash": "ac4500f2d5e28b7f835a738710fd4e8baa5f08fb6664fb7134301faa3a0e2ac3"
+    },
+    {
+      "step": "close pass",
+      "actor": "issuer",
+      "circuit": "closePass",
+      "txHash": "5db7623ff59fac5865e77b132d308d52da4d5d48ea8851369618ea3451443b2a",
+      "txId": "00860c702ddfa22769c683251e72f0365003a82317897562b8df55fd3d62c15a20",
+      "blockHeight": 72522,
+      "blockHash": "f9294ffcc80b45db0816410441caf14a4a10f8b35d210792d62de43c0b32ea2f"
+    }
   ],
-  "status": "dust-registered",
-  "wallet": {
-    "dustAddress": "mn_dust_preview1wvpm7ggmwgtef54jpr2hnp69ujkgqs5rvqysaav47tntejetuyss7cavxd3",
-    "unshieldedAddress": "mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt"
-  }
+  "rejections": [
+    {
+      "step": "Alice 2nd claim",
+      "actor": "alice",
+      "circuit": "claim",
+      "error": "failed assert: VeilID: already claimed"
+    },
+    {
+      "step": "Bob prove eligible",
+      "actor": "bob",
+      "circuit": "proveEligible",
+      "error": "Error executing circuit 'proveEligible'"
+    },
+    {
+      "step": "Bob claim",
+      "actor": "bob",
+      "circuit": "claim",
+      "error": "Error executing circuit 'claim'"
+    }
+  ],
+  "auditor": {
+    "nullifier": "b137d64bec096275beee6c00d0d2f3858a2326abff9c2dce556cf7f290782643",
+    "fingerprint": "e696fdbc7db4a2e23fba54ab3a1eb0e1a2684efbf116650f1a25a5e36ab320e5",
+    "match": true,
+    "tamperedMatch": false
+  },
+  "finalState": {
+    "phase": 2,
+    "memberCount": 3,
+    "claimCount": 1,
+    "eligibleProofs": 1,
+    "merkleRoot": "6bbc981355339070d8c0c36743b75b1254ec069fed0e16b5bf9afc9e44481c37",
+    "commitments": [
+      "c19b7a264d66e1510006d900b85d1e35ffc59fcfbb20ee54deab0ea0211f18ec",
+      "e41fd756f46770feb8551d22d6fc47771942cb688f5c783d70b8b9d5ee27f5f6",
+      "8c586d6936da248f89d032c7ace7cb86f4bccc7ed07bcf7213830a5f382730f4"
+    ],
+    "revoked": [],
+    "nullifiers": [
+      "b137d64bec096275beee6c00d0d2f3858a2326abff9c2dce556cf7f290782643"
+    ]
+  },
+  "notes": [
+    "Real ZK proofs on Midnight Preview testnet (ledger 9), proof server 9.0.0.",
+    "Demo keys are deterministic throwaway testnet values; secret keys are NOT recorded here.",
+    "Revocation is witness-enforced, not circuit-enforced (see README honest limits)."
+  ]
 }

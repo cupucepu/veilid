@@ -18,7 +18,7 @@ License: Apache-2.0.
 | Contract | `contract/src/veilid.compact` (Compact 0.36.0, language 0.28.0, ledger 9, runtime 0.21.0) |
 | Circuits | 11 exported circuits (7 impure + 4 pure), compiles with ZK keys (`npm run compact`, ~48 s) |
 | Tests | 22 / 22 contract simulator tests + 4 / 4 webapp engine tests (26 total, `npm test`) |
-| Deployment | Preview testnet deployment pending — Fase 3 in progress (`cli/` deploy tooling, no on-chain tx yet) |
+| Deployment | **Deployed on Midnight Preview testnet (ledger 9)** — contract `7b013d8c…e95b86fc`, deploy tx `7d3d6936…22c460e` (block 72486), 7 demo steps on-chain, record in `deployments/preview.json` |
 | Reference pattern | NightPoll (Merkle membership + commitment + nullifier), adapted — not copied |
 
 ## For judges: verify in ~10 minutes
@@ -145,10 +145,14 @@ with real ZK proofs — Midnight.js 5.0.0, proof server 9.0.0 (running
 locally, `http://127.0.0.1:6300/health` ok), Compact.js 3.0.0. Full
 4-role end-to-end demo: `npm run veilid -- demo` (see `cli/src/demo.ts`).
 
-**Status 2026-11-12: funded, DUST registered, demo re-run in progress.**
-The deploy wallet is created and synced. Funding came from the Preview
-faucet, which requires a Cloudflare Turnstile captcha, so only a human
-can fund it:
+**Status 2026-11-12: DEPLOYED.** Full 4-role demo ran end-to-end with real
+ZK proofs on Preview (ledger 9), 10:23–10:27 WITA:
+
+- Contract: `7b013d8c6f4c3c31cac1ce63ec50666fc06c3f2320cb81dd0a203d9de95b86fc`
+- Deploy tx: `7d3d693689934fdf40b3faea5e4e2948329a4bbf6ec4039dafe08b75f22c460e` (block 72486)
+- 7 on-chain steps (register ×3, open, prove, claim, close — blocks 72491–72522) + 3 expected rejections (Alice 2nd claim "already claimed", Bob prove/claim rejected) + auditor MATCH, tampered NO MATCH
+- Final on-chain state: phase 2, 3 members, 1 claim, 1 eligible proof, Merkle root `6bbc9813…481c37`
+- Full record (every tx hash, tx id, block hash): `deployments/preview.json`
 
 - Faucet: https://faucet.preview.midnight.network
 - Wallet (unshielded): `mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt`
