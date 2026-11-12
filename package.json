@@ -1,0 +1,23 @@
+{
+  "description": "VeilID \u2014 a private Agent ID pass on Midnight. Prove .ai Agent ID eligibility without revealing the wallet.",
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "license": "Apache-2.0",
+  "name": "veilid",
+  "private": true,
+  "scripts": {
+    "compact": "npm run compact -w @veilid/contract",
+    "dev": "npm run dev -w veilid-webapp",
+    "test": "npm test -w @veilid/contract && npm test -w veilid-webapp",
+    "typecheck": "npm run typecheck -w @veilid/contract && npm run typecheck -w veilid-webapp",
+    "veilid": "npm run veilid -w @veilid/cli --"
+  },
+  "type": "module",
+  "version": "0.1.0",
+  "workspaces": [
+    "contract",
+    "webapp",
+    "cli"
+  ]
+}
