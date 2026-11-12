@@ -15,8 +15,8 @@ License: Apache-2.0.
 
 |  |  |
 | --- | --- |
-| Contract | `contract/src/veilid.compact` (Compact 0.31.1, language 0.23.0, ledger 8.0.2, runtime 0.16.0) |
-| Circuits | 7 impure + 4 pure, compiles with ZK keys (`npm run compact`, ~48 s) |
+| Contract | `contract/src/veilid.compact` (Compact 0.36.0, language 0.28.0, ledger 9, runtime 0.21.0) |
+| Circuits | 11 exported circuits (7 impure + 4 pure), compiles with ZK keys (`npm run compact`, ~48 s) |
 | Tests | 22 / 22 contract simulator tests + 4 / 4 webapp engine tests (26 total, `npm test`) |
 | Deployment | Preview testnet deployment pending — Fase 3 in progress (`cli/` deploy tooling, no on-chain tx yet) |
 | Reference pattern | NightPoll (Merkle membership + commitment + nullifier), adapted — not copied |
@@ -163,7 +163,7 @@ Deployment record: `deployments/preview.json` (currently holds the blocker
 ## Quickstart
 
 Prerequisites: Node ≥ 24.11 and the Compact toolchain (manager 0.5.3,
-compiler 0.31.1). `scripts/env.sh` puts the persistent installs on `PATH`.
+compiler 0.36.0). `scripts/env.sh` puts the persistent installs on `PATH`.
 
 ```
 source scripts/env.sh
@@ -187,17 +187,17 @@ curl -sL -o compact.tar.xz \
   https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.3/compact-x86_64-unknown-linux-musl.tar.xz
 tar -xJf compact.tar.xz -C ~/workspace/tools/compact/bin --strip-components=1
 
-# toolchain 0.31.1 — normally: compact update 0.31.1
+# toolchain 0.36.0 — normally: compact update 0.36.0
 # NOTE (2026-11-12): `compact update` fails in this VM — its GitHub API
 # client gets a DNS error while curl to api.github.com works fine. Manual
 # install, verified working:
 curl -sL -o compactc.zip \
-  https://github.com/midnightntwrk/compact/releases/download/compactc-v0.31.1/compactc_v0.31.1_x86_64-unknown-linux-musl.zip
-unzip -q compactc.zip -d ~/workspace/tools/compact/toolchains/versions/0.31.1/x86_64-unknown-linux-musl
+  https://github.com/midnightntwrk/compact/releases/download/compactc-v0.36.0/compactc_v0.36.0_x86_64-unknown-linux-musl.zip
+unzip -q compactc.zip -d ~/workspace/tools/compact/toolchains/versions/0.36.0/x86_64-unknown-linux-musl
 
 # verify
 compact --version            # compact 0.5.3
-compact compile +0.31.1 --help   # prints compactc help (toolchain found)
+compact compile +0.36.0 --help   # prints compactc help (toolchain found)
 ```
 
 ## Tests
