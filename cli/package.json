@@ -1,0 +1,40 @@
+{
+  "dependencies": {
+    "@midnight-ntwrk/midnight-js-contracts": "5.0.0",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-protocol": "5.0.0",
+    "@midnight-ntwrk/midnight-js-types": "5.0.0",
+    "@midnight-ntwrk/midnight-js-utils": "5.0.0",
+    "@midnight-ntwrk/testkit-js": "5.0.0",
+    "@midnightntwrk/wallet-sdk": "2.0.0",
+    "fp-ts": "^2.16.11",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
+    "rxjs": "^7.8.2",
+    "ws": "^8.21.1",
+    "@veilid/contract": "*",
+    "@midnight-ntwrk/compact-runtime": "0.21.0",
+    "@midnight-ntwrk/compact-js": "3.0.0",
+    "effect": "3.22.4",
+    "https-proxy-agent": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3"
+  },
+  "license": "Apache-2.0",
+  "name": "@veilid/cli",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "veilid": "tsx src/main.ts"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}
