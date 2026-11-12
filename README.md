@@ -145,20 +145,35 @@ with real ZK proofs — Midnight.js 5.0.0, proof server 9.0.0 (running
 locally, `http://127.0.0.1:6300/health` ok), Compact.js 3.0.0. Full
 4-role end-to-end demo: `npm run veilid -- demo` (see `cli/src/demo.ts`).
 
-**Status 2026-11-12: blocked on faucet funding.** The deploy wallet is
-created and synced, but empty. The Preview faucet requires a Cloudflare
-Turnstile captcha, so only a human can fund it:
+**Status 2026-11-12: funded, DUST registered, demo re-run in progress.**
+The deploy wallet is created and synced. Funding came from the Preview
+faucet, which requires a Cloudflare Turnstile captcha, so only a human
+can fund it:
 
 - Faucet: https://faucet.preview.midnight.network
 - Wallet (unshielded): `mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt`
-- Amount: one drip = 1000 tNIGHT (covers deploy + ~10 demo calls)
+- Amount: the faucet dispensed **5,000 tNIGHT** (not 1,000 as first assumed)
 - Proof the captcha blocks automation: `POST /api/drips` without a token
   returns `400 {"error":"Missing X-Captcha-Token header"}` (verified
   2026-11-12).
 
-After funding: `npm run veilid -- fund`, then `npm run veilid -- demo`.
-Deployment record: `deployments/preview.json` (currently holds the blocker
-+ wallet addresses; no contract deployed yet, no tx hashes yet).
+**DUST registration (ledger 9, required).** Transaction fees are paid in
+DUST, and holding tNIGHT generates none on its own — the NIGHT UTxOs must
+first be registered for DUST generation
+(`wallet.registerNightUtxosForDustGeneration`). The first demo run failed
+on exactly this (`Wallet.InsufficientFunds: could not balance dust`).
+Register explicitly, then wait for DUST to accrue before deploying:
+
+```
+npm run veilid -- fund            # verify tNIGHT balance
+npm run veilid -- register-dust   # registration tx, then poll until dust > 0
+npm run veilid -- demo            # deploy + full 4-role demo (also registers dust first)
+```
+
+Registration tx `00b640f1…fa6952a` (fee ≈ 0.36 DUST); DUST was ~82 and
+accruing ~3/min at last check. Deployment record:
+`deployments/preview.json` (currently `dust-registered`; no contract
+deployed yet, no tx hashes yet).
 
 ## Quickstart
 

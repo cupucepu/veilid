@@ -4,6 +4,7 @@
 //   npm run veilid -- wallet    create/load the local wallet, print addresses + balances
 //   npm run veilid -- faucet    try the Preview faucet (no captcha token; expected to fail)
 //   npm run veilid -- fund      show balances + dust status, and what funding is needed
+//   npm run veilid -- register-dust  register NIGHT for DUST generation + wait for accrual
 //   npm run veilid -- deploy    deploy a fresh VeilID pass, record deployments/preview.json
 //   npm run veilid -- demo      full 4-role e2e demo with real ZK proofs (deploy + all steps)
 //   npm run veilid -- state <contractAddress>   read + print the on-chain ledger state
@@ -23,6 +24,7 @@ import {
   getDustAddress,
   getUnshieldedAddress,
   loadOrCreateSeed,
+  registerDust,
   syncWalletState,
 } from "./wallet.js";
 import { VeilIdApi, hex, merkleRootHex } from "./api.js";
@@ -33,6 +35,7 @@ const usage = `VeilID CLI (Midnight Preview testnet, ledger 9)
   wallet                 create/load wallet, print addresses + balances
   faucet                 try the Preview faucet drip (no captcha token)
   fund                   show balances + dust status
+  register-dust          register NIGHT for DUST generation + wait for accrual
   deploy                 deploy a fresh VeilID pass
   demo                   full 4-role e2e demo with real ZK proofs
   state <contractAddress>  read the on-chain ledger state
@@ -133,10 +136,21 @@ async function cmdFund(): Promise<void> {
       "balances",
     );
     logger.info(
-      "DUST (the fee token) is registered automatically by the wallet balancer on the " +
-        "first transaction once the wallet holds tNIGHT. One standard faucet drip covers " +
-        "deploy + the ~10 demo calls. If the wallet is empty, fund it at " +
+      "DUST (the fee token) is NOT automatic: NIGHT UTxOs must be registered " +
+        "for DUST generation first (`npm run veilid -- register-dust`, or the " +
+        "deploy/demo commands do it for you). One standard faucet drip covers " +
+        "deploy + the ~10 demo calls once DUST has accrued. If the wallet is empty, fund it at " +
         `${PREVIEW_ENV.faucet} (browser + captcha) with address ${address}.`,
+    );
+  });
+}
+
+async function cmdRegisterDust(): Promise<void> {
+  await withWallet(async (wp) => {
+    const { registrationTxId, dustBalance } = await registerDust(wp, logger);
+    logger.info(
+      { registrationTxId, dustBalanceSpecks: dustBalance.toString() },
+      "dust registration done",
     );
   });
 }
@@ -144,6 +158,8 @@ async function cmdFund(): Promise<void> {
 async function cmdDeploy(): Promise<void> {
   await requireProofServer();
   await withWallet(async (wp, seed) => {
+    // Fees are paid in DUST: register first, or balanceTx rejects the deploy.
+    await registerDust(wp, logger);
     const providers = buildProviders(wp, seed);
     const api = new VeilIdApi(providers);
     const passId = createHash("sha256").update("veilid:demo:pass:2026-11-12").digest();
@@ -204,12 +220,17 @@ async function main(): Promise<void> {
     case "fund":
       await cmdFund();
       break;
+    case "register-dust":
+      await cmdRegisterDust();
+      break;
     case "deploy":
       await cmdDeploy();
       break;
     case "demo":
       await requireProofServer();
       await withWallet(async (wp, seed) => {
+        // Fees are paid in DUST: register first, or balanceTx rejects the deploy.
+        await registerDust(wp, logger);
         const providers = buildProviders(wp, seed);
         await runDemo(wp, providers);
       });
