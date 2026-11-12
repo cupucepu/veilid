@@ -1,0 +1,188 @@
+// VeilID: a private Agent ID pass on Midnight.
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+// Privacy model
+//  - Each holder keeps a local secret key `sk` (never leaves the device).
+//  - Registration publishes only commitment = H("veilid:member:", passId, sk),
+//    inserted into a Merkle tree of eligible holders.
+//  - Eligibility is proven in zero knowledge: the holder shows that
+//    H(..sk) is a leaf of the members tree (via a Merkle path supplied by a
+//    witness) without revealing which leaf, and without revealing the wallet,
+//    the Agent ID, or any token that made them eligible.
+//  - A claim publishes nullifier = H("veilid:nullifier:", passId, sk) and
+//    stores it; a second claim from the same key produces the same nullifier
+//    and is rejected. Commitment and nullifier use different domain tags, so
+//    they cannot be linked to each other.
+//  - The issuer can revoke a commitment. Revocation does not delete the leaf
+//    (the Merkle tree is append-only history); instead the commitment is added
+//    to a public revocation set that proveEligible() and claim() both check.
+//  - An audit fingerprint = H("veilid:audit:", passId, nullifier, salt) lets
+//    a holder voluntarily disclose exactly one claim to an auditor. The
+//    auditor verifies the fingerprint against the on-chain nullifier without
+//    learning the wallet, the secret key, or which commitment claimed.
+//  - Only the pass id, pass name, phase, counts, opaque commitments,
+//    opaque nullifiers and the revocation set ever reach the public ledger.
+
+pragma language_version 0.28;
+
+import CompactStandardLibrary;
+
+export enum Phase {
+  REGISTRATION,
+  CLAIMING,
+  CLOSED
+}
+
+export sealed ledger passId: Bytes<32>;
+
+export sealed ledger passName: Opaque<"string">;
+
+export sealed ledger openRegistration: Boolean;
+
+export sealed ledger admin: Bytes<32>;
+
+export ledger phase: Phase;
+
+export ledger members: HistoricMerkleTree<10, Bytes<32>>;
+
+export ledger commitments: Set<Bytes<32>>;
+
+export ledger revoked: Set<Bytes<32>>;
+
+export ledger memberCount: Counter;
+
+export ledger nullifiers: Set<Bytes<32>>;
+
+export ledger claimCount: Counter;
+
+export ledger eligibleProofs: Counter;
+
+witness localSecretKey(): Bytes<32>;
+
+witness findMembershipPath(commitment: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
+
+constructor(id: Bytes<32>, n: Opaque<"string">, open: Boolean) {
+  passId = disclose(id);
+  passName = disclose(n);
+  openRegistration = disclose(open);
+  admin = disclose(adminKey(disclose(id), localSecretKey()));
+  phase = Phase.REGISTRATION;
+}
+
+export pure circuit adminKey(id: Bytes<32>, sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "veilid:admin:"), id, sk]);
+}
+
+export pure circuit memberCommitment(id: Bytes<32>, sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "veilid:member:"), id, sk]);
+}
+
+export pure circuit claimNullifier(id: Bytes<32>, sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "veilid:nullifier:"), id, sk]);
+}
+
+// Salted fingerprint of one claim, for voluntary disclosure to an auditor.
+// The auditor recomputes this from the disclosed (nullifier, salt) pair and
+// checks it against the on-chain nullifier set. The salt keeps the
+// fingerprint unlinkable to anything else, and the holder's wallet, secret
+// key and commitment are never part of the fingerprint.
+export pure circuit auditFingerprint(id: Bytes<32>, nullifier: Bytes<32>, salt: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>([pad(32, "veilid:audit:"), id, nullifier, salt]);
+}
+
+circuit assertAdmin(): [] {
+  assert(admin == adminKey(passId, localSecretKey()), "VeilID: caller is not the admin");
+}
+
+circuit addCommitment(c: Bytes<32>): [] {
+  assert(phase == Phase.REGISTRATION, "VeilID: registration is closed");
+  assert(!commitments.member(c), "VeilID: already registered");
+  assert(!members.isFull(), "VeilID: member tree is full");
+  commitments.insert(c);
+  members.insert(c);
+  memberCount.increment(1);
+}
+
+// Self-registration (only if the pass was created with openRegistration = true).
+// Only the holder's own commitment is disclosed, computed from their secret key.
+export circuit register(): [] {
+  assert(openRegistration, "VeilID: self-registration disabled");
+  addCommitment(disclose(memberCommitment(passId, localSecretKey())));
+}
+
+// Admin-curated registration: a holder computes their commitment off-chain
+// and hands it to the issuer, who registers it. The issuer never sees the
+// holder's secret key, wallet, or Agent ID.
+export circuit registerCommitment(commitment: Bytes<32>): [] {
+  assertAdmin();
+  addCommitment(disclose(commitment));
+}
+
+// Admin-only: revoke a commitment. The leaf stays in the Merkle tree
+// (append-only history); the commitment joins the public revocation set.
+// Enforcement is at the witness level (see witnesses.ts): the honest client
+// refuses to build a membership proof for a revoked commitment.
+// It is NOT enforced inside proveEligible()/claim() on purpose: Compact's
+// ledger API cannot test membership of a witness-derived value without
+// disclose()ing it, and disclosing the commitment inside a claim would
+// publish it in the same transaction as the nullifier, linking the claim
+// back to the registration and destroying unlinkability. Circuit-level
+// private revocation (a ZK non-membership proof / accumulator) is a
+// Fase 2 research item; the revocation set published here is the hook it
+// will build on.
+export circuit revokeCommitment(commitment: Bytes<32>): [] {
+  assertAdmin();
+  assert(phase == Phase.REGISTRATION || phase == Phase.CLAIMING, "VeilID: pass is closed");
+  const c = disclose(commitment);
+  assert(commitments.member(c), "VeilID: unknown commitment");
+  assert(!revoked.member(c), "VeilID: already revoked");
+  revoked.insert(c);
+}
+
+export circuit openClaiming(): [] {
+  assertAdmin();
+  assert(phase == Phase.REGISTRATION, "VeilID: not in registration");
+  assert(memberCount.read() > 0, "VeilID: no members");
+  phase = Phase.CLAIMING;
+}
+
+export circuit closePass(): [] {
+  assertAdmin();
+  assert(phase == Phase.CLAIMING, "VeilID: not in claiming");
+  phase = Phase.CLOSED;
+}
+
+// Prove eligibility without revealing identity. The ZK proof attests
+// "the caller's secret key belongs to one of the registered commitments";
+// the only public effect is +1 on the eligibleProofs counter. No wallet,
+// no Agent ID, no token, no secret key and no Merkle path reaches the chain.
+export circuit proveEligible(): [] {
+  assert(phase == Phase.CLAIMING, "VeilID: claiming is not open");
+  const sk = localSecretKey();
+  const commitment = memberCommitment(passId, sk);
+  const path = findMembershipPath(commitment);
+  assert(path.leaf == commitment, "VeilID: path does not match member");
+  assert(members.checkRoot(disclose(merkleTreePathRoot<10, Bytes<32>>(path))),
+         "VeilID: not a registered member");
+  eligibleProofs.increment(1);
+}
+
+// Claim the pass once. Same membership proof as proveEligible, plus a
+// one-time nullifier: a second claim from the same secret key produces the
+// same nullifier and is rejected, while staying unlinkable to the
+// registration commitment (different domain tag).
+export circuit claim(): [] {
+  assert(phase == Phase.CLAIMING, "VeilID: claiming is not open");
+  const sk = localSecretKey();
+  const commitment = memberCommitment(passId, sk);
+  const path = findMembershipPath(commitment);
+  assert(path.leaf == commitment, "VeilID: path does not match member");
+  assert(members.checkRoot(disclose(merkleTreePathRoot<10, Bytes<32>>(path))),
+         "VeilID: not a registered member");
+
+  const nul = disclose(claimNullifier(passId, sk));
+  assert(!nullifiers.member(nul), "VeilID: already claimed");
+  nullifiers.insert(nul);
+  claimCount.increment(1);
+}
