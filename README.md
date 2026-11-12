@@ -138,10 +138,27 @@ Fase 2 (done, 2026-11-12): Vite + TypeScript demo webapp in `webapp/`
 (simulator mode, no wallet, no network) — 4-role demo (issuer / Alice /
 Bob / auditor), live public-ledger + private panels, 4 engine tests.
 `npm run dev` → http://localhost:5173, press “▶ Run full demo”.
-Fase 3 (in progress): `cli/` for Preview deployment and a 4-role end-to-end
-demo with real ZK proofs. Deployment records go to
-`deployments/preview.json`. The Preview faucet needs a Cloudflare Turnstile
-captcha, so funding the deploy wallet may need a human step.
+## Preview deployment
+
+Fase 3 (in progress): `cli/` deploys to Midnight Preview testnet (ledger 9)
+with real ZK proofs — Midnight.js 5.0.0, proof server 9.0.0 (running
+locally, `http://127.0.0.1:6300/health` ok), Compact.js 3.0.0. Full
+4-role end-to-end demo: `npm run veilid -- demo` (see `cli/src/demo.ts`).
+
+**Status 2026-11-12: blocked on faucet funding.** The deploy wallet is
+created and synced, but empty. The Preview faucet requires a Cloudflare
+Turnstile captcha, so only a human can fund it:
+
+- Faucet: https://faucet.preview.midnight.network
+- Wallet (unshielded): `mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt`
+- Amount: one drip = 1000 tNIGHT (covers deploy + ~10 demo calls)
+- Proof the captcha blocks automation: `POST /api/drips` without a token
+  returns `400 {"error":"Missing X-Captcha-Token header"}` (verified
+  2026-11-12).
+
+After funding: `npm run veilid -- fund`, then `npm run veilid -- demo`.
+Deployment record: `deployments/preview.json` (currently holds the blocker
++ wallet addresses; no contract deployed yet, no tx hashes yet).
 
 ## Quickstart
 

@@ -182,3 +182,113 @@ npm run compact && npm run typecheck && npm test
   register / prove / claim / audit-verify). No GitHub repo/push, no AKINDO
   registration (needs user's GitHub username + own AKINDO account).
   No revocation exercised in the UI (contract tests cover it).
+
+## Fase 3 — Preview testnet deployment (in progress, 2026-11-12)
+
+### Ledger-9 migration (done)
+- Preview relaunched 2026-11-07 as a new ledger-9 chain; old Preview history
+  gone. Ledger-8 stack (compactc 0.31.1, midnight-js 4.1.1, proof-server
+  8.1.3) does NOT work on current Preview. Required ledger-9 stack:
+  Compact toolchain 0.36.0 (language 0.28.0, runtime 0.21.0), Midnight.js
+  5.0.0, Wallet SDK 2.0.0, proof server 9.0.0, indexer 4.4.101,
+  testkit-js 5.0.0, Compact.js 3.0.0.
+- compactc 0.36.0 downloaded + installed
+  (`~/workspace/tools/compact/toolchains/versions/0.36.0/`, verified:
+  0.36.0 / language 0.28.0 / ZKIR 3.2.0-rc.2 / runtime 0.21.0).
+- `veilid.compact` pragma 0.23 → 0.28; compiles clean with 0.36.0
+  (7 circuits, ~23 s); managed artifacts replaced in
+  `contract/src/managed/veilid/` (incl. `compiler/contract-manifest.json`,
+  runtime 0.21.0).
+- `compact-runtime` 0.16.0 → 0.21.0 in `contract/` + `webapp/` package.json;
+  `compact` scripts now `+0.36.0`.
+- Simulator rewritten async for runtime 0.21.0 (`initialState` returns
+  Promise; contexts via `createCircuitContext(...)`; state as `ChargedState`).
+  `VeilIdSimulator.create()` is now the constructor; all circuit methods
+  return `Promise<Ledger>`. Tests + webapp converted to async/await.
+- Verified green after migration: typecheck (contract + webapp) pass,
+  contract 22/22, webapp 4/4, webapp build OK (JS 117.67 kB, WASM 1.58 MB).
+  Re-verified 2026-11-12 ~01:27 UTC after the CLI work: `npm test` exit 0.
+
+### Proof server 9.0.0 (done, running)
+- No docker in the VM; fetched the image layer from Docker Hub like
+  NightPoll does. amd64 manifest digest
+  `sha256:1dbf40d735869d50fa518f49b7d7514c65746af9bbc27978a65ff1824c6842b3`;
+  layer `sha256:e1fadff418dda3dc4e77b9c011f9d43709436dfefd026908949019119271454f`
+  (29,657,269 bytes, sha256-verified on download).
+- GNU tar fails on the nix store layer (read-only 0555 dirs block file
+  creation); extracted with Python tarfile forcing dirs to 0755.
+  2,951 files, 99 MB under `~/workspace/tools/proof-server-9.0.0/rootfs/`.
+- Runner `~/workspace/tools/proof-server-9.0.0/proof-server.sh` (ld-linux +
+  glibc 2.42-51 + libgcc, `--num-workers 1`, PID 13401).
+  `GET http://127.0.0.1:6300/health` → `{"status":"ok",...}` (verified
+  2026-11-12 01:17 UTC). Keep it running for deploy/demo; stop with
+  `kill 13401` when done.
+
+### CLI `veilid/cli/` (done, typechecks, wallet syncs)
+- Midnight.js 5.0.0 + testkit-js 5.0.0 + wallet-sdk 2.0.0 + Compact.js
+  3.0.0 + effect 3.22.4. Commands: `wallet / faucet / fund / deploy /
+  demo / state <address>` (`npm run veilid -w @veilid/cli -- <cmd>`).
+- Key v5 API facts (from installed .d.ts, not docs memory):
+  `setNetworkId()` gone — `providers.config = { networkId, ttlSeconds }`;
+  `deployContract`/`findDeployedContract` take a Compact.js
+  `CompiledContract` built as `pipe(CompiledContract.make("veilid",
+  Contract), withWitnesses(witnesses),
+  withCompiledFileAssets(managedDir))`; private state per role via
+  `findDeployedContract({ compiledContract, contractAddress,
+  privateStateId, initialPrivateState })`; `callTx.<circuit>(...args)`
+  returns finalized data with `public.{txHash, txId, blockHeight,
+  blockHash}`; state read via
+  `queryContractState(addr).contractState.deserialize({ v9: ContractState
+  }).data` → `ledger(...)`; `NodeZkConfigProvider(managedDir)` reads
+  keys/zkir + verifies against `compiler/contract-manifest.json`.
+- `MidnightWalletProvider.build` logs the master seed in plaintext, so the
+  CLI builds via `FluentWalletBuilder.buildWithoutStarting()` +
+  `MidnightWalletProvider.withWallet()` and `start(false)` instead.
+- **VM egress quirk (fixed):** all egress goes through
+  `hatch-egress-proxy:3128`; direct wss fails at TLS ("wrong version
+  number"). `cli/src/ws-shim.ts` replaces the global WebSocket with a
+  `ws`-based one tunneled through the proxy (HttpsProxyAgent) — installed
+  only when a proxy env var is set. Also fixed the indexer WS URL:
+  `wss://indexer.preview.midnight.network/api/v4/graphql/ws` (the `/ws`
+  suffix is required; without it the upgrade gets HTTP 405).
+  Verified: proxied indexer WS gets `connection_ack`; polkadot ApiPromise
+  over the shim reports chain "Midnight Preview", version 2.1.101,
+  genesis 0x3c096de2… (the one "1000 Normal Closure" seen in an early run
+  was transient).
+- Wallet created 2026-11-12 ~01:33 UTC, seed at `~/.veilid/preview-seed`
+  (chmod 600, outside the repo, never printed/committed). Synced fully
+  (shielded + unshielded + dust, protocol Settled) 01:38 UTC.
+  - Unshielded: `mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt`
+  - Dust: `mn_dust_preview1wvpm7ggmwgtef54jpr2hnp69ujkgqs5rvqysaav47tntejetuyss7cavxd3`
+  - Balances: empty (0 tNIGHT, 0 DUST).
+
+### BLOCKER — faucet captcha (verified empirically, 2026-11-12 01:39 UTC)
+- Faucet API (from the faucet SPA bundle
+  `/assets/index-Ccts26He.js`): `POST /api/drips` with headers
+  `Content-Type: application/json` + `X-Captcha-Token`, body
+  `{recipientAddress, amount}`; fixed drip 1000 tNIGHT; status polled at
+  `GET /api/drips/{dripId}`.
+- Direct POST without a token → **400 `{"error":"Missing
+  X-Captcha-Token header"}`**. (First attempt to `/drips` without the
+  `/api` prefix → 404.) Programmatic funding is impossible; only a human
+  solving the Cloudflare Turnstile captcha in a browser can fund the
+  wallet.
+- **User step:** open https://faucet.preview.midnight.network, solve the
+  captcha, paste
+  `mn_addr_preview1782fhrcqpwjmca6vr5wwvpjuxz757gfeuv2mcjzncrfqyl50gksqfmxyyt`.
+  One drip (1000 tNIGHT) covers deploy + ~10 demo calls; DUST registers
+  automatically on the first transaction.
+- Resume after funding: `npm run veilid -- fund` (verify balance + dust),
+  then `npm run veilid -- demo` (full 4-role e2e: deploy, register Alice /
+  Carol / Dave, open claiming, Alice prove + claim, 2nd claim rejected,
+  Bob prove/claim rejected, auditor MATCH + tampered NO MATCH, close pass,
+  final state → overwrites `deployments/preview.json` with the real record).
+- `deployments/preview.json` currently records the blocker + wallet
+  addresses (status `blocked-awaiting-faucet`); no contract deployed yet,
+  no tx hashes yet — nothing fabricated.
+
+### NOT done in Fase 3 (waiting on the faucet)
+- No deploy, no on-chain demo, no tx hashes, no final on-chain state.
+- No GitHub push, no AKINDO action (per Fase 3 constraints; repo
+  https://github.com/cupucepu/veilid was created separately by the parent
+  agent 2026-11-12 09:37 WITA — username cupucepu, verified 09:33 WITA).

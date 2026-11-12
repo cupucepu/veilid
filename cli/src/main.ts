@@ -92,10 +92,13 @@ async function cmdFaucet(): Promise<void> {
   await withWallet(async (wp) => {
     const address = await getUnshieldedAddress(wp, PREVIEW_ENV);
     logger.info({ faucet: PREVIEW_ENV.faucet, address }, "requesting a drip (no captcha token)");
-    const res = await fetch(`${PREVIEW_ENV.faucet}/drips`, {
+    // Faucet API (from the faucet SPA bundle): POST /api/drips, headers
+    // Content-Type + X-Captcha-Token, body {recipientAddress, amount}.
+    // The UI drips a fixed 1000 tNIGHT per request.
+    const res = await fetch(`${PREVIEW_ENV.faucet}/api/drips`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ address }),
+      body: JSON.stringify({ recipientAddress: address, amount: "1000" }),
       signal: AbortSignal.timeout(30_000),
     }).catch((err: unknown) => {
       logger.error({ error: err instanceof Error ? err.message : String(err) }, "faucet request failed (network)");
