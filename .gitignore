@@ -13,3 +13,4 @@ vendor/
 logs/
 coverage/
 .DS_Store
+cli/midnight-level-db/
