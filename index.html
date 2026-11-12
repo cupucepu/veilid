@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeilID — Private Agent Pass (Midnight demo)</title>
+    <script type="module" crossorigin src="/veilid/assets/index-DPDR7DqR.js"></script>
+    <link rel="stylesheet" crossorigin href="/veilid/assets/index-D6cvGop3.css">
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="brand">🌙 VeilID <span>Private Agent Pass</span></div>
+        <div class="badges">
+          <span class="badge">Simulator mode</span>
+          <span class="badge">No wallet · No network</span>
+          <span class="badge">Compact 0.31.1 · ledger 8</span>
+        </div>
+      </header>
+
+      <p class="lede">
+        Prove you hold a <strong>.ai Agent ID</strong> without revealing your wallet.
+        The issuer publishes the eligible set as opaque hashes. A holder proves
+        eligibility in zero knowledge and claims exactly once — the chain only
+        ever sees commitments, nullifiers, and counts.
+      </p>
+
+      <div class="actions-row">
+        <button id="run-all" class="btn primary">▶ Run full demo</button>
+        <button id="reset" class="btn">↺ New demo run (fresh random keys)</button>
+        <span id="run-status" class="run-status"></span>
+      </div>
+
+      <ol class="steps" id="steps">
+        <li data-step="issuer"><strong>1 · Issuer</strong><span>creates the pass &amp; registers 3 members</span></li>
+        <li data-step="alice"><strong>2 · Alice</strong><span>proves eligible &amp; claims once</span></li>
+        <li data-step="bob"><strong>3 · Bob</strong><span>the sybil — rejected twice</span></li>
+        <li data-step="auditor"><strong>4 · Auditor</strong><span>verifies one disclosed claim</span></li>
+      </ol>
+
+      <main class="layout">
+        <section class="roles">
+          <nav class="tabs" role="tablist">
+            <button class="tab active" data-tab="issuer" role="tab">Issuer</button>
+            <button class="tab" data-tab="alice" role="tab">Alice · jstark.ai</button>
+            <button class="tab" data-tab="bob" role="tab">Bob · sybil</button>
+            <button class="tab" data-tab="auditor" role="tab">Auditor</button>
+          </nav>
+
+          <article class="panel tab-panel active" id="tab-issuer">
+            <h2>Issuer — the project / tournament</h2>
+            <p>
+              The issuer creates the pass and publishes the eligible set as
+              opaque hashes. It never sees a wallet, an Agent ID, or a secret
+              key — members hand it only their commitment, a hash.
+            </p>
+            <div class="btn-row">
+              <button id="btn-create" class="btn primary">1 · Create pass</button>
+              <button id="btn-register" class="btn primary" disabled>2 · Register 3 members</button>
+              <button id="btn-open" class="btn primary" disabled>3 · Open claiming</button>
+              <button id="btn-close" class="btn" disabled>Close pass</button>
+            </div>
+            <div class="result" id="result-issuer"><em>No pass yet. Start with “Create pass”.</em></div>
+            <div class="members" id="member-list"></div>
+          </article>
+
+          <article class="panel tab-panel" id="tab-alice">
+            <h2>Alice — jstark.ai, eligible holder</h2>
+            <p>
+              Alice holds a .ai Agent ID. Her secret key lives on her device and
+              is <strong>never displayed and never sent anywhere</strong>.
+              Watch what the chain learns when she acts: a counter +1 — never who she is.
+            </p>
+            <div class="kv"><span>Secret key</span><code>•••••••••••••••• (on this device only)</code></div>
+            <div class="btn-row">
+              <button id="btn-alice-prove" class="btn primary" disabled>Prove eligible</button>
+              <button id="btn-alice-claim" class="btn primary" disabled>Claim once</button>
+              <button id="btn-alice-claim-again" class="btn" disabled>Claim again (should fail)</button>
+            </div>
+            <div class="result" id="result-alice"><em>Claiming opens in the Issuer tab first.</em></div>
+            <div class="receipt" id="alice-receipt" hidden></div>
+          </article>
+
+          <article class="panel tab-panel" id="tab-bob">
+            <h2>Bob — sybil / non-member</h2>
+            <p>
+              Bob holds no Agent ID in this pass and was never registered.
+              He tries to prove eligibility and to claim anyway — the same
+              buttons Alice used.
+            </p>
+            <div class="kv"><span>Secret key</span><code>•••••••••••••••• (on this device only)</code></div>
+            <div class="btn-row">
+              <button id="btn-bob-prove" class="btn primary" disabled>Prove eligible</button>
+              <button id="btn-bob-claim" class="btn primary" disabled>Claim</button>
+            </div>
+            <div class="result" id="result-bob"><em>Claiming opens in the Issuer tab first.</em></div>
+          </article>
+
+          <article class="panel tab-panel" id="tab-auditor">
+            <h2>Auditor — voluntary disclosure</h2>
+            <p>
+              Alice <em>chooses</em> to disclose exactly one claim: its
+              nullifier and a salt. The auditor recomputes the audit
+              fingerprint from that pair and checks the nullifier is on the
+              public ledger. Nothing else is revealed — not the wallet, not
+              the secret key, not which commitment claimed.
+            </p>
+            <div class="btn-row">
+              <button id="btn-disclose" class="btn primary" disabled>Alice discloses her claim to the auditor</button>
+            </div>
+            <div class="audit-form" id="audit-form" hidden>
+              <label>Disclosed fingerprint <input id="audit-fp" readonly /></label>
+              <label>Disclosed nullifier <input id="audit-nul" readonly /></label>
+              <label>Disclosed salt <input id="audit-salt" /></label>
+              <div class="btn-row">
+                <button id="btn-verify" class="btn primary">Verify</button>
+                <button id="btn-tamper" class="btn">Tamper with the salt (flip one digit)</button>
+                <button id="btn-restore-salt" class="btn" disabled>Restore the real salt</button>
+              </div>
+            </div>
+            <div class="result" id="result-auditor"><em>Alice must claim first, then disclose.</em></div>
+          </article>
+        </section>
+
+        <aside class="side">
+          <section class="panel ledger">
+            <h2>📖 Public ledger <span class="live">live</span></h2>
+            <p class="hint">Everything anyone can see on chain. Hashes are opaque — they identify nothing by themselves.</p>
+            <dl id="ledger"></dl>
+          </section>
+
+          <section class="panel private">
+            <h2>🔒 Never leaves the device</h2>
+            <ul>
+              <li>Each holder's <strong>secret key</strong></li>
+              <li><strong>Wallet addresses</strong> and Agent IDs</li>
+              <li>Which <strong>commitment</strong> belongs to whom</li>
+              <li>The <strong>Merkle path</strong> used in each proof</li>
+              <li>The <strong>audit salt</strong> — until its holder discloses it</li>
+            </ul>
+          </section>
+
+          <section class="panel log">
+            <h2>📝 Transcript</h2>
+            <ol id="transcript"></ol>
+          </section>
+        </aside>
+      </main>
+
+      <footer>
+        VeilID demo — simulator mode. Circuits run against a local simulated
+        ledger (same code path as the 22 contract tests); no real ZK proofs,
+        no testnet yet — that is Fase 3. Contract:
+        <code>contract/src/veilid.compact</code> · Apache-2.0 · Built for the
+        Midnight Buildathon (AKINDO) Wave 3 by jstark.ai.
+      </footer>
+    </div>
+  </body>
+</html>
